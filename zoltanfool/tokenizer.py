@@ -1,6 +1,6 @@
 """Bytes in, ints out. Vocab is 256, so there is nothing to train."""
 
-def encdoe(text: str) -> list[int]:
+def encode(text: str) -> list[int]:
     """Encode a string to a list of integers."""
     return list(text.encode("utf-8"))
 
