@@ -1,4 +1,27 @@
+# Python
 .venv/
 __pycache__/
+*.py[cod]
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# Built data and model weights (rebuild with data/build_corpus.py)
+data/raw/
+*.bin
+*.pt
+*.pth
+*.safetensors
+
+# OS noise
+Thumbs.db
+desktop.ini
+*:Zone.Identifier
+.DS_Store
