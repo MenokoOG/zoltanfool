@@ -1,5 +1,7 @@
 """The two model sizes. Only n_layer and d_model are different between the two. The smaller model is used for testing and debugging, while the larger model is used for training and inference.
 """
+from dataclasses import dataclass
+
 
 
 @dataclass(frozen=True)
