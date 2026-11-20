@@ -6,12 +6,14 @@ from pathlib import Path
 
 def normalize(b: bytes) -> bytes:
     """Strip line whitespace, blank lines and comment-only lines, so copies that differ only there match."""
-    lines = (l.strip() for l in b.decode("utf-8", "replace").splitlines())
-    return "\n".join(l for l in lines if l and not l.startswith("#")).encode()
+    lines = (line.strip() for line in b.decode("utf-8", "replace").splitlines())
+    return "\n".join(x for x in lines if x and not x.startswith("#")).encode()
 
 
-def build(roots: list[str], out_dir: str = "data/raw", val_every: int = 10):
-    seen, train, val = set(), [], []
+def build(roots: list[str], out_dir: str = "data/raw", val_every: int = 10) -> tuple[int, int]:
+    seen: set[str] = set()
+    train: list[bytes] = []
+    val: list[bytes] = []
     for root in roots:
         for p in sorted(Path(root).rglob("*.py")):
             try:

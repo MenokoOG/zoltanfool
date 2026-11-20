@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zoltanfool"
+version = "0.2.0"
+description = "A small byte-level code model, written by hand from the math in PyTorch."
+requires-python = ">=3.11"
+dependencies = ["torch>=2.4"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10", "matplotlib>=3.8"]
+
+[tool.setuptools]
+packages = ["zoltanfool"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.mypy]
+ignore_missing_imports = true
+explicit_package_bases = true
+files = ["zoltanfool", "scripts", "tasks", "data"]

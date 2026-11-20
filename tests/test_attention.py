@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+
 from zoltanfool.config import Config
 from zoltanfool.model import CausalSelfAttention, ZoltanFool
 
