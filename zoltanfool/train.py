@@ -5,11 +5,13 @@ import time
 from pathlib import Path
 
 import torch
+import torch.nn as nn
 
 from .checkpoint import load, save
 
 
-def get_batch(data: torch.Tensor, batch: int, context: int, gen: torch.Generator):
+def get_batch(data: torch.Tensor, batch: int, context: int,
+              gen: torch.Generator) -> tuple[torch.Tensor, torch.Tensor]:
     ix = torch.randint(len(data) - context - 1, (batch,), generator=gen)
     x = torch.stack([data[i:i + context] for i in ix])
     y = torch.stack([data[i + 1:i + context + 1] for i in ix])   # shifted one byte right
@@ -23,7 +25,7 @@ def lr_at(step: int, total: int, peak: float = 3e-4, warmup: int = 100, floor: f
     return peak * (floor + (1 - floor) * 0.5 * (1 + math.cos(math.pi * t)))
 
 
-def fixed_windows(data: torch.Tensor, context: int, count: int):
+def fixed_windows(data: torch.Tensor, context: int, count: int) -> tuple[torch.Tensor, torch.Tensor]:
     """The same non-overlapping validation windows every time, spread across the whole set."""
     n = (len(data) - 1) // context
     starts = [int(i * n / count) * context for i in range(min(count, n))]
@@ -33,7 +35,7 @@ def fixed_windows(data: torch.Tensor, context: int, count: int):
 
 
 @torch.no_grad()
-def val_loss(model, vx, vy, chunk: int = 16) -> float:
+def val_loss(model: nn.Module, vx: torch.Tensor, vy: torch.Tensor, chunk: int = 16) -> float:
     """Mean loss over fixed windows. No random generator, so it never disturbs training."""
     model.eval()
     total, n = 0.0, 0
@@ -44,7 +46,7 @@ def val_loss(model, vx, vy, chunk: int = 16) -> float:
     return total / n
 
 
-def make_optimizer(model, peak: float, weight_decay: float = 0.1):
+def make_optimizer(model: nn.Module, peak: float, weight_decay: float = 0.1) -> torch.optim.AdamW:
     """Decay matrices only. Norm gains and biases are 1-D and stay free of decay."""
     decay = [p for p in model.parameters() if p.ndim >= 2]
     free = [p for p in model.parameters() if p.ndim < 2]
@@ -62,9 +64,10 @@ def best_val_so_far(log: Path) -> float:
     return min(vals, default=float("inf"))
 
 
-def train(model, train_data, val_data, steps, batch, context, run_dir="checkpoints/run",
-          seed=0, peak=3e-4, accum=1, eval_every=250, ckpt_every=500, clip=1.0, resume=True,
-          weight_decay=0.1):
+def train(model: nn.Module, train_data: torch.Tensor, val_data: torch.Tensor, steps: int, batch: int,
+          context: int, run_dir: str = "checkpoints/run", seed: int = 0, peak: float = 3e-4, accum: int = 1,
+          eval_every: int = 250, ckpt_every: int = 500, clip: float = 1.0, resume: bool = True,
+          weight_decay: float = 0.1) -> nn.Module:
     """One call trains, logs to run_dir/log.csv, saves last.pt and best.pt, and resumes if last.pt exists."""
     out = Path(run_dir)
     out.mkdir(parents=True, exist_ok=True)

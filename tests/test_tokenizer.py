@@ -1,5 +1,5 @@
-from zoltanfool.tokenizer import decode, encode
 from zoltanfool.baselines import uniform_nats
+from zoltanfool.tokenizer import decode, encode
 
 
 def test_tokenizer_round_trip():
