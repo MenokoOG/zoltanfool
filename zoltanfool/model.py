@@ -1,20 +1,25 @@
-"""ZoltanFool: a small decoder-only transformer, written from the math."""
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from .config import Config
+class CausalSelfAttention(nn.Module):
+    """Stage 3. Explicit Q, K, V, scaled scores, causal mask, softmax, head merge."""
 
-
-class Bigram(nn.Module):
-    """Stage 2. The current byte picks a row of logits for the next byte."""
-
-    def __init__(self, vocab_size: int = 256):
+    def __init__(self, c: Config):
         super().__init__()
-        self.table = nn.Embedding(vocab_size, vocab_size)
+        self.n_head, self.hd = c.n_head, c.head_dim
+        self.q = nn.Linear(c.d_model, c.d_model, bias=False)
+        self.k = nn.Linear(c.d_model, c.d_model, bias=False)
+        self.v = nn.Linear(c.d_model, c.d_model, bias=False)
+        self.out = nn.Linear(c.d_model, c.d_model, bias=False)
+        mask = torch.tril(torch.ones(c.context_length, c.context_length, dtype=torch.bool))
+        self.register_buffer("mask", mask, persistent=False)
 
-    def forward(self, x, y=None):
-        logits = self.table(x)                      # (B, T, V)
-        loss = None
-        if y is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
-        return logits, loss
+    def split(self, t):                              # (B,T,d) -> (B,h,T,hd)
+        B, T, _ = t.shape
+        return t.view(B, T, self.n_head, self.hd).transpose(1, 2)
+
+    def forward(self, x):
+        B, T, d = x.shape
+        q, k, v = self.split(self.q(x)), self.split(self.k(x)), self.split(self.v(x))
+        scores = q @ k.transpose(-2, -1) / math.sqrt(self.hd)      # (B,h,T,T)
+        scores = scores.masked_fill(~self.mask[:T, :T], float("-inf"))
+        w = scores.softmax(dim=-1)
+        y = (w @ v).transpose(1, 2).reshape(B, T, d)               # merge heads
+        return self.out(y)
